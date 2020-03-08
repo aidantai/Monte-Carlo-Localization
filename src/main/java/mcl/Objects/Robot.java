@@ -5,19 +5,19 @@ public class Robot {
     private static Particle bestParticle = new Particle();
     private static Particle weightedAverage = new Particle();
 
-    public Particle getBestParticle() {
+    public static Particle getBestParticle() {
         return bestParticle;
     }
 
-    public Particle getWeightedAverage() {
+    public static Particle getWeightedAverage() {
         return weightedAverage;
     }
 
-    public void updateBestParticle(Particle particle) {
+    public static void updateBestParticle(Particle particle) {
         bestParticle = particle;
     }
 
-    public void updateWeightedAverage(Particle particle) {
+    public static void updateWeightedAverage(Particle particle) {
         weightedAverage = particle;
     }
 }

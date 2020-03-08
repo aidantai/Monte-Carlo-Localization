@@ -2,7 +2,8 @@ package mcl.Objects;
 
 import java.util.ArrayList;
 
-public class Map {
+// OGM is short for Occupancy Grid Map
+public class OGM {
 
     private double width, height, resolution; // This would be in the real-world units of the scanner (i.e. cm, inches, etc.)
     private int rows, cols; // Resolution is the width and height of each cell
@@ -25,7 +26,7 @@ public class Map {
     private double locc = Math.log(pm/(1-pm)); 
     private double lfree = Math.log((1-pm)/pm);
 
-    public Map() {
+    public OGM() {
         this.width = 100;
         this.height = 100;
         this.resolution = 1;
@@ -42,7 +43,7 @@ public class Map {
         fillArray(occupancyMap, 0.5);
     }
 
-    public Map(double width, double height, double resolution, Particle origin) {
+    public OGM(double width, double height, double resolution, Particle origin) {
         this.width = width;
         this.height = height;
         this.resolution = resolution;
@@ -50,13 +51,14 @@ public class Map {
         this.rows = (int)Math.ceil(height/resolution);  // This can be problematic because of truncation. The truncation becomes
         this.cols = (int)Math.ceil(width/resolution);   // particularly prominent when using the gui. Make sure that the
         this.binaryMap = new int[cols][rows];           // height and width divided by the resolution fits the aspect ratio
-        this.origin = origin;                           // Example: Map(1920, 1080, 10)
+        this.origin = origin;                           // Example: OGM(1920, 1080, 10)
         
         this.logOdds = new double[cols][rows];
         this.occupancyMap = new double[cols][rows];
+        fillArray(occupancyMap, 0.5);
     }
 
-    public Map(double width, double height, int rows, int cols, Particle origin) { 
+    public OGM(double width, double height, int rows, int cols, Particle origin) { 
         this.width = width;
         this.height = height;
         this.resolution = Math.min(width/cols, height/rows); 
@@ -71,6 +73,7 @@ public class Map {
         
         this.logOdds = new double[cols][rows];
         this.occupancyMap = new double[cols][rows];
+        fillArray(occupancyMap, 0.5);
     }
 
     public void boxMap(int[][] matrix) { // Sets the borders of the matrix to 1. Was a useful function for testing
