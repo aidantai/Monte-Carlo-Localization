@@ -318,26 +318,27 @@ public class MCL {
         return newParticles;
     }
 
-    public ArrayList<Particle> resample(ArrayList<Particle> oldParticles, int numResampled) {
-        ArrayList<Particle> newParticles = new ArrayList<Particle>();
-        double factor = 1 / oldParticles.size();
-        double r = factor * rand.nextDouble();
-        double c = oldParticles.get(0).getWeight();
-        double u;
+    // This is another resampler that I don't understand and which does not work in any way whatsoever, but here it is
+    // public ArrayList<Particle> resample(ArrayList<Particle> oldParticles, int numResampled) {
+    //     ArrayList<Particle> newParticles = new ArrayList<Particle>();
+    //     double factor = 1 / oldParticles.size();
+    //     double r = factor * rand.nextDouble();
+    //     double c = oldParticles.get(0).getWeight();
+    //     double u;
 
-        int i = 0;
-        for (int m = 0; m < numResampled; ++m) {
-            u = r + factor*m;
-            while( u > c) {
-                if (++i >= oldParticles.size()) break;
-                c += oldParticles.get(i).getWeight();
-            }
-            Particle resampledParticle = oldParticles.get(i);
-            newParticles.add(new Particle(resampledParticle.getX(), resampledParticle.getY(), resampledParticle.getTheta(), factor));
-        }
+    //     int i = 0;
+    //     for (int m = 0; m < numResampled; ++m) {
+    //         u = r + factor*m;
+    //         while( u > c) {
+    //             if (++i >= oldParticles.size()) break;
+    //             c += oldParticles.get(i).getWeight();
+    //         }
+    //         Particle resampledParticle = oldParticles.get(i);
+    //         newParticles.add(new Particle(resampledParticle.getX(), resampledParticle.getY(), resampledParticle.getTheta(), factor));
+    //     }
 
-        return newParticles;
-    }
+    //     return newParticles;
+    // }
 
     private ArrayList<Particle> MCLAlgorithm(ArrayList<Particle> previousParticles, ArrayList<Scan> sensorData, double deltaX, double deltaY, double deltaTheta, int numParticles) {
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
