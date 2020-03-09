@@ -64,6 +64,8 @@ public class Particle {
         return String.format("(%s, %s, %s) Weight: %s", this.x, this.y, this.theta, this.weight);
     }
     
-
+    public String printCoords() {
+        return String.format("(%s, %s, %s)", this.x, this.y, this.theta);
+    }
 
 }

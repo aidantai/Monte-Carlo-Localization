@@ -18,7 +18,6 @@ public class OGM {
     // then using that binary map for MCL. There are most likely better solutions to this, but the algorithm itself works fine.
 
     // Parameters specific to the sensor for the occupancy grid mapping
-    private double maxrange = 4000; // 
     private double alpha = 1;
     private double beta = 0.127;
     private double pm = 0.6; // The amount of confidence needed to decide that a cell is occupied or free. 60% or more is occ. 40% or less is free.
@@ -157,9 +156,9 @@ public class OGM {
         int k = argmin(deltaThetas); // Finds what angle from the robot points to the given map cell
         Scan closestScan = scans.get(k);
 
-        if (deltaThetas[k] > beta/2 || r > Math.min(maxrange, closestScan.getDistance() + alpha/2)) {
+        if (deltaThetas[k] > beta/2 || r > Math.min(Scan.MAX_RANGE, closestScan.getDistance() + alpha/2)) {
             return lnaught;
-        } else if (closestScan.getDistance() < maxrange && (Math.abs(r - closestScan.getDistance()) < alpha/2)) {
+        } else if (closestScan.getDistance() < Scan.MAX_RANGE && (Math.abs(r - closestScan.getDistance()) < alpha/2)) {
             return locc;
         } else if (r <= closestScan.getDistance()) {
             return lfree;

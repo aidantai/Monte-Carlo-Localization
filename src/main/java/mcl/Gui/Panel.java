@@ -16,7 +16,6 @@ public class Panel extends JPanel {
     private ArrayList<Particle> points; // List of points to draw. Points take in exact positions, no conversion
     private OGM map; 
 
-    private int robotSize = 6; // Radius of robot's circle
     private boolean drawGrid = true; 
 
     
@@ -63,10 +62,12 @@ public class Panel extends JPanel {
             this.plotPoint(point, g2d);
         }
 
+        g2d.setColor(Color.PINK);
+        this.drawRobot(g2d, Robot.getTruePos(), 8);
         g2d.setColor(Color.YELLOW);
-        this.drawRobot(g2d, Robot.getBestParticle());
+        this.drawRobot(g2d, Robot.getBestParticle(), 6);
         g2d.setColor(Color.BLUE);
-        this.drawRobot(g2d, Robot.getWeightedAverage());
+        this.drawRobot(g2d, Robot.getWeightedAverage(), 6);
     }
 
     private void drawGrid(Graphics2D g) {
@@ -101,11 +102,11 @@ public class Panel extends JPanel {
     }
 
     // Basically just draws an oval of robot size at the particle's position
-    private void drawRobot(Graphics2D g, Particle robotPos) {
+    private void drawRobot(Graphics2D g, Particle robotPos, int size) {
         g.fillOval(
-            (int)( (robotPos.getX()-map.getOrigin().getX()) * (int)this.getSize().getWidth()/map.getWidth() - robotSize/2 ),
-            (int)( (map.getHeight()-(robotPos.getY() - map.getOrigin().getY())) * (int)this.getSize().getHeight()/map.getHeight() - robotSize/2 ), 
-            robotSize, robotSize);
+            (int)( (robotPos.getX()-map.getOrigin().getX()) * (int)this.getSize().getWidth()/map.getWidth() - size/2 ),
+            (int)( (map.getHeight()-(robotPos.getY() - map.getOrigin().getY())) * (int)this.getSize().getHeight()/map.getHeight() - size/2 ), 
+            size, size);
     }
 
     private void drawParticle(Particle p, Graphics2D g) {
