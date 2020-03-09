@@ -19,16 +19,16 @@ public class MCL {
     boolean usingGui = false;
 
     // Sensor model parameters
-    static double stdevhit = 60;
-    static double lambdashort = 1;
-    static double zhit = 1.3;
-    static double zshort = 0.01;
+    static double stdevhit = 1;
+    static double lambdashort = 0.05;
+    static double zhit = 1.25;
+    static double zshort = 0.0000000001;
     static double zmax = 0.01;
-    static double zrand = 0.01;
+    static double zrand = 0.02;
 
     // Motion model parameters
-    static double a1 = 0.05; // spreads out in all directions.
-    static double a2 = 0.1; // spreads out theta.
+    static double a1 = 0; // spreads out in all directions.
+    static double a2 = 0; // spreads out theta.
     static double a3 = 0.2; // spreads out in the translational direction
     static double a4 = 0; // spreads out a significant amount in translational direction
     static double a5 = 0;
@@ -225,6 +225,8 @@ public class MCL {
         zshort = probShortSum/zMag;
         zmax = probMaxSum/zMag;
         zrand = probRandSum/zMag;
+        //if (zrand == 0) zrand = 0.02;
+        //if (zmax == 0) zmax = 0.001;
         
         // to avoid dividing by 0
         if (probHitSum != 0) stdevhit = Math.sqrt(hitErrorSquared/probHitSum);
@@ -319,27 +321,27 @@ public class MCL {
         return newParticles;
     }
 
-    // This is another resampler that I don't understand and which does not work in any way whatsoever, but here it is
-    // public ArrayList<Particle> resample(ArrayList<Particle> oldParticles, int numResampled) {
-    //     ArrayList<Particle> newParticles = new ArrayList<Particle>();
-    //     double factor = 1 / oldParticles.size();
-    //     double r = factor * rand.nextDouble();
-    //     double c = oldParticles.get(0).getWeight();
-    //     double u;
+    //This is another resampler that I don't understand and which does not work in any way whatsoever, but here it is
+    public ArrayList<Particle> resample(ArrayList<Particle> oldParticles, int numResampled) {
+        ArrayList<Particle> newParticles = new ArrayList<Particle>();
+        double factor = 1 / oldParticles.size();
+        double r = factor * rand.nextDouble();
+        double c = oldParticles.get(0).getWeight();
+        double u;
 
-    //     int i = 0;
-    //     for (int m = 0; m < numResampled; ++m) {
-    //         u = r + factor*m;
-    //         while( u > c) {
-    //             if (++i >= oldParticles.size()) break;
-    //             c += oldParticles.get(i).getWeight();
-    //         }
-    //         Particle resampledParticle = oldParticles.get(i);
-    //         newParticles.add(new Particle(resampledParticle.getX(), resampledParticle.getY(), resampledParticle.getTheta(), factor));
-    //     }
+        int i = 0;
+        for (int m = 0; m < numResampled; ++m) {
+            u = r + factor*m;
+            while( u > c) {
+                if (++i >= oldParticles.size()) break;
+                c += oldParticles.get(i).getWeight();
+            }
+            Particle resampledParticle = oldParticles.get(i);
+            newParticles.add(new Particle(resampledParticle.getX(), resampledParticle.getY(), resampledParticle.getTheta(), factor));
+        }
 
-    //     return newParticles;
-    // }
+        return newParticles;
+    }
 
     // Ties everything together
     private ArrayList<Particle> MCLAlgorithm(ArrayList<Particle> previousParticles, ArrayList<Scan> sensorData, double deltaX, double deltaY, double deltaTheta, int numParticles) {
@@ -439,7 +441,7 @@ public class MCL {
             double angle = 3.6*i;
             double distance = raycast(map, position, angle, Scan.MIN_RANGE, Scan.MAX_RANGE) - r;
             // randomly generates sensor failures for testing
-            //if (r < 0.001) distance = Scan.MAX_RANGE;
+            if (r < 0.001) distance = Scan.MAX_RANGE;
             fakeScans.add(new Scan(distance, angle));
         }
         return fakeScans;
@@ -447,7 +449,7 @@ public class MCL {
 
     public void simulate(Particle truePos, int numSimulations) {
         Robot.updateTruePos(truePos);
-        learn_intrinsic_parameters(generateFakeScans(Robot.getTruePos()), truePos, map);
+        //learn_intrinsic_parameters(generateFakeScans(Robot.getTruePos()), truePos, map);
 
         for (int simulation = 0; simulation < numSimulations; simulation++) {
             System.out.println("Simulation: " + simulation);

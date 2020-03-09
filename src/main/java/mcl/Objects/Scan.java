@@ -8,7 +8,7 @@ public class Scan {
     private double distance; // distance in cm.
     private double angle; // angle in degrees.
     
-    public static double MAX_RANGE = 1000; // The Scanse had a max range of 4000 cm
+    public static double MAX_RANGE = 500; // The Scanse had a max range of 4000 cm
     public static double MIN_RANGE = 0;    // and a min range of 5 cm
     
 

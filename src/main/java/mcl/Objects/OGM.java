@@ -38,7 +38,7 @@ public class OGM {
         this.logOdds = new double[cols][rows];
         this.occupancyMap = new double[cols][rows];
 
-        boxMap(binaryMap);
+        setBoxMap();
         fillArray(occupancyMap, 0.5);
     }
 
@@ -75,14 +75,14 @@ public class OGM {
         fillArray(occupancyMap, 0.5);
     }
 
-    public void boxMap(int[][] matrix) { // Sets the borders of the matrix to 1. Was a useful function for testing
+    public void setBoxMap() { // Sets the borders of the matrix to 1. Was a useful function for testing
         for (int x = 0; x < cols; x++) {
-            matrix[x][0] = 1;
-            matrix[x][rows-1] = 1;
+            this.binaryMap[x][0] = 1;
+            this.binaryMap[x][rows-1] = 1;
         }
         for (int y = 0; y < rows; y++) {
-            matrix[0][y] = 1;
-            matrix[cols-1][y] = 1;
+            this.binaryMap[0][y] = 1;
+            this.binaryMap[cols-1][y] = 1;
         }
     }
 

@@ -16,7 +16,7 @@ public class Panel extends JPanel {
     private ArrayList<Particle> points; // List of points to draw. Points take in exact positions, no conversion
     private OGM map; 
 
-    private boolean drawGrid = false; 
+    private boolean drawGrid = true; 
 
     
     public Panel() {
@@ -62,7 +62,7 @@ public class Panel extends JPanel {
             this.plotPoint(point, g2d);
         }
 
-        g2d.setColor(Color.PINK);
+        g2d.setColor(Color.GREEN);
         this.drawRobot(g2d, Robot.getTruePos(), 8);
         g2d.setColor(Color.YELLOW);
         this.drawRobot(g2d, Robot.getBestParticle(), 6);

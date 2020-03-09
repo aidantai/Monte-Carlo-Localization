@@ -57,6 +57,7 @@ public class Particle {
         this.x += deltax;
         this.y += deltay;
         this.theta += deltatheta;
+        this.theta = (this.theta % 360);
     }
 
     // Notation looks like 3d, but its 2d with angle. (x, y, Θ)
