@@ -112,6 +112,7 @@ public class MCL {
         return range;
     }
 
+    // A super basic weighing algorithm that minimizes squared error
     private ArrayList<Particle> errorSquaredWeigh(ArrayList<Particle> particles, ArrayList<Scan> scans) {
         for (Particle particle : particles) {
             double weight = 0;
@@ -340,6 +341,7 @@ public class MCL {
     //     return newParticles;
     // }
 
+    // Ties everything together
     private ArrayList<Particle> MCLAlgorithm(ArrayList<Particle> previousParticles, ArrayList<Scan> sensorData, double deltaX, double deltaY, double deltaTheta, int numParticles) {
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
         motionUpdate(previousParticles, deltaX, deltaY, deltaTheta);
@@ -357,12 +359,14 @@ public class MCL {
         }
     }
 
+    // This one runs on the class's currentParticles
     public void motionUpdate(double deltaX, double deltaY, double deltaTheta) {
         for (Particle particle : currentParticles) {
             sample_motion_model_odometry(particle, deltaX, deltaY, deltaTheta);
         }
     }
 
+    // This one's parametrized just in case
     public void motionUpdate(ArrayList<Particle> particles, double deltaX, double deltaY, double deltaTheta) {
         for (Particle particle : particles) {
             // sample_velocity_motion_model(particle, deltaForward, deltaTheta, deltaT));
@@ -370,6 +374,7 @@ public class MCL {
         }
     }
 
+    // Second function to put whatever you want, such as gui or adaptive sizing (which I am planning on implementing)
     public void update(double deltaX, double deltaY, double deltaTheta, ArrayList<Scan> sensorData, int numParticles) {
         currentParticles = MCLAlgorithm(currentParticles, sensorData, deltaX, deltaY, deltaTheta, numParticles);
 
@@ -430,9 +435,10 @@ public class MCL {
     public ArrayList<Scan> generateFakeScans(Particle position) {
         ArrayList<Scan> fakeScans = new ArrayList<Scan>();
         for (int i = 1; i <= 100; i++) {
-            double r = rand.nextDouble();
+            double r = rand.nextDouble(); // The code actually needs a small amount of error or the intrinsic parameters break
             double angle = 3.6*i;
             double distance = raycast(map, position, angle, Scan.MIN_RANGE, Scan.MAX_RANGE) - r;
+            // randomly generates sensor failures for testing
             //if (r < 0.001) distance = Scan.MAX_RANGE;
             fakeScans.add(new Scan(distance, angle));
         }
@@ -444,7 +450,7 @@ public class MCL {
         learn_intrinsic_parameters(generateFakeScans(Robot.getTruePos()), truePos, map);
 
         for (int simulation = 0; simulation < numSimulations; simulation++) {
-            System.out.println(simulation);
+            System.out.println("Simulation: " + simulation);
             update(0, 0, 0, generateFakeScans(Robot.getTruePos()), numParticles);
             System.out.println(printEstimates());
         }

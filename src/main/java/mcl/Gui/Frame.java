@@ -46,8 +46,8 @@ public class Frame extends JFrame implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        double deltaX = Math.cos(Math.toRadians(Robot.getTruePos().getTheta()))*this.translation;
-        double deltaY = Math.sin(Math.toRadians(Robot.getTruePos().getTheta()))*this.translation;
+        // double deltaX = Math.cos(Math.toRadians(Robot.getTruePos().getTheta()))*this.translation;
+        // double deltaY = Math.sin(Math.toRadians(Robot.getTruePos().getTheta()))*this.translation;
         switch (e.getKeyCode()) {
             case KeyEvent.VK_W:
                 Robot.translate(0, this.translation, 0);
