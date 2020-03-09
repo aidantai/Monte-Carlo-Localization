@@ -32,5 +32,7 @@ public class Robot {
 
     public static void translate(double deltaX, double deltaY, double deltaTheta) {
         truePos.translate(deltaX, deltaY, deltaTheta);
+        // bestParticle.translate(deltaX, deltaY, deltaTheta);
+        // weightedAverage.translate(deltaX, deltaY, deltaTheta);
     }
 }

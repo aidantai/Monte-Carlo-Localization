@@ -46,7 +46,8 @@ public class Frame extends JFrame implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        System.out.println(e);
+        double deltaX = Math.cos(Math.toRadians(Robot.getTruePos().getTheta()))*this.translation;
+        double deltaY = Math.sin(Math.toRadians(Robot.getTruePos().getTheta()))*this.translation;
         switch (e.getKeyCode()) {
             case KeyEvent.VK_W:
                 Robot.translate(0, this.translation, 0);
@@ -66,6 +67,16 @@ public class Frame extends JFrame implements KeyListener {
             case KeyEvent.VK_D:
                 Robot.translate(this.translation, 0, 0);
                 monty.motionUpdate(this.translation, 0, 0);
+                this.repaint();   
+                break;
+            case KeyEvent.VK_LEFT:
+                Robot.translate(0, 0, 15);
+                monty.motionUpdate(0, 0, 15);
+                this.repaint();   
+                break;
+            case KeyEvent.VK_RIGHT:
+                Robot.translate(0, 0, -15);
+                monty.motionUpdate(0, 0, -15);
                 this.repaint();   
                 break;
         }

@@ -16,7 +16,7 @@ public class Panel extends JPanel {
     private ArrayList<Particle> points; // List of points to draw. Points take in exact positions, no conversion
     private OGM map; 
 
-    private boolean drawGrid = true; 
+    private boolean drawGrid = false; 
 
     
     public Panel() {

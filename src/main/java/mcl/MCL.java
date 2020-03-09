@@ -28,7 +28,7 @@ public class MCL {
 
     // Motion model parameters
     static double a1 = 0.05; // spreads out in all directions.
-    static double a2 = 0.05; // spreads out theta.
+    static double a2 = 0.1; // spreads out theta.
     static double a3 = 0.2; // spreads out in the translational direction
     static double a4 = 0; // spreads out a significant amount in translational direction
     static double a5 = 0;
@@ -39,13 +39,15 @@ public class MCL {
     public MCL(OGM map, int numParticles) {
         this.map = map;
         this.numParticles = numParticles;
-        this.currentParticles = generateRandomParticles(map, numParticles);
+        //this.currentParticles = generateRandomParticles(map, numParticles);
+        this.currentParticles = generateUniformParticles(map);
     }
 
     public MCL(OGM map, int numParticles, Frame frame) {
         this.map = map;
         this.numParticles = numParticles;
-        this.currentParticles = generateRandomParticles(map, numParticles);
+        //this.currentParticles = generateRandomParticles(map, numParticles);
+        this.currentParticles = generateUniformParticles(map);
 
         this.frame = frame;
         this.frame.setTitle("Monte Carlo Localization");
@@ -55,12 +57,12 @@ public class MCL {
 
     // Warning: This could run indefinitely if the map has no vacant cells!!
     // Generates particles evenly throughout the map
-    private ArrayList<Particle> generateRandomParticles(OGM map, int numGenerated) { 
+    public ArrayList<Particle> generateRandomParticles(OGM map, int numGenerated) { 
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
         for (int i = 0; i < numGenerated; i++) {
             double xrand = rand.nextDouble() * map.getWidth() + map.getOrigin().getX();
             double yrand = rand.nextDouble() * map.getHeight() + map.getOrigin().getY();
-            double thetarand = 0;//rand.nextDouble() * 360;
+            double thetarand = rand.nextDouble() * 360;
             if (!map.isOccupied(xrand, yrand)) { 
                 newParticles.add(new Particle(xrand, yrand, thetarand));
             } else {
@@ -71,7 +73,7 @@ public class MCL {
     }
 
     // Puts a particle the center of every empty cell
-    private ArrayList<Particle> generateUniformParticles(OGM map) { 
+    public ArrayList<Particle> generateUniformParticles(OGM map) { 
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
         for (int col = 0; col < map.getCols(); col++) {
             for (int row = 0; row < map.getRows(); row++) {
@@ -80,6 +82,7 @@ public class MCL {
                 }
             }
         }
+        currentParticles.addAll(newParticles); 
         return newParticles;
     }
 
@@ -296,7 +299,9 @@ public class MCL {
         double maxWeight = findBestParticle(oldParticles).getWeight();
         
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
-        for (int i = 0; i < numResampled; i++) {
+        newParticles.add(Robot.getBestParticle());
+        newParticles.add(Robot.getWeightedAverage());
+        for (int i = 0; i < numResampled - 2; i++) {
             beta += rand.nextDouble() * maxWeight;
             while (beta > oldParticles.get(index).getWeight()) {
                 beta -= oldParticles.get(index).getWeight();
@@ -304,8 +309,8 @@ public class MCL {
             }
             Particle resampledParticle = oldParticles.get(index);
             newParticles.add(new Particle(
-                resampledParticle.getX() + rand.nextGaussian()*map.getResolution()/3, 
-                resampledParticle.getY() + rand.nextGaussian()*map.getResolution()/3, 
+                resampledParticle.getX() + rand.nextGaussian()*map.getResolution()/4, 
+                resampledParticle.getY() + rand.nextGaussian()*map.getResolution()/4, 
                 resampledParticle.getTheta() + rand.nextGaussian(), 
                 resampledParticle.getWeight()));
             //newParticles.add(new Particle(resampledParticle.getX(), resampledParticle.getY(), resampledParticle.getTheta(), resampledParticle.getWeight()));
@@ -334,15 +339,14 @@ public class MCL {
         return newParticles;
     }
 
-    private ArrayList<Particle> MCLAlgorithm(ArrayList<Particle> previousParticles, ArrayList<Scan> sensorData, double deltaX, double deltaY, double deltaTheta) {
+    private ArrayList<Particle> MCLAlgorithm(ArrayList<Particle> previousParticles, ArrayList<Scan> sensorData, double deltaX, double deltaY, double deltaTheta, int numParticles) {
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
         motionUpdate(previousParticles, deltaX, deltaY, deltaTheta);
         sensorUpdate(previousParticles, sensorData);
         Robot.updateBestParticle(findBestParticle(previousParticles));
         Robot.updateWeightedAverage(findWeightedAverage(previousParticles));
-        newParticles = resampleParticles(previousParticles, numParticles*3/5);
-        newParticles.addAll(previousParticles.subList(0, numParticles/5)); // Keep some old particles so that MCL doesn't get entirely lost
-        newParticles.addAll(generateRandomParticles(map, numParticles/5));
+        newParticles = resampleParticles(previousParticles, numParticles*2/3);
+        newParticles.addAll(generateRandomParticles(map, numParticles/3));
         return newParticles;
     }
 
@@ -365,8 +369,8 @@ public class MCL {
         }
     }
 
-    public void update(double deltaX, double deltaY, double deltaTheta, ArrayList<Scan> sensorData) {
-        currentParticles = MCLAlgorithm(currentParticles, sensorData, deltaX, deltaY, deltaTheta);
+    public void update(double deltaX, double deltaY, double deltaTheta, ArrayList<Scan> sensorData, int numParticles) {
+        currentParticles = MCLAlgorithm(currentParticles, sensorData, deltaX, deltaY, deltaTheta, numParticles);
 
         if (usingGui) {
             frame.panel.setParticles(currentParticles);
@@ -399,19 +403,27 @@ public class MCL {
         xAverage /= weightSum;
         yAverage /= weightSum;
         thetaAverage /= weightSum;
-        return new Particle(xAverage, yAverage, thetaAverage, weightSum);
+        if (weightSum != 0) {
+            return new Particle(xAverage, yAverage, thetaAverage, weightSum);
+        } else {
+            return Robot.getWeightedAverage();
+        }
     }
 
     private Particle findBestParticle(ArrayList<Particle> particles) {
-        Particle bestParticle = new Particle();
+        Particle tempParticle = new Particle();
         double maxWeight = 0;
         for (Particle particle : particles) {
             if (particle.getWeight() > maxWeight) {
                 maxWeight = particle.getWeight();
-                bestParticle = particle;
+                tempParticle = particle;
             }
         }
-        return bestParticle;
+        if (tempParticle.getWeight() != 0) {
+            return tempParticle;
+        } else {
+            return Robot.getBestParticle();
+        }
     }
 
     public ArrayList<Scan> generateFakeScans(Particle position) {
@@ -419,7 +431,7 @@ public class MCL {
         for (int i = 1; i <= 100; i++) {
             double r = rand.nextDouble();
             double angle = 3.6*i;
-            double distance = raycast(map, position, angle, Scan.MIN_RANGE, Scan.MAX_RANGE) - rand.nextDouble();
+            double distance = raycast(map, position, angle, Scan.MIN_RANGE, Scan.MAX_RANGE) - r;
             //if (r < 0.001) distance = Scan.MAX_RANGE;
             fakeScans.add(new Scan(distance, angle));
         }
@@ -432,7 +444,7 @@ public class MCL {
 
         for (int simulation = 0; simulation < numSimulations; simulation++) {
             System.out.println(simulation);
-            update(0, 0, 0, generateFakeScans(Robot.getTruePos()));
+            update(0, 0, 0, generateFakeScans(Robot.getTruePos()), numParticles);
             System.out.println(printEstimates());
         }
     }

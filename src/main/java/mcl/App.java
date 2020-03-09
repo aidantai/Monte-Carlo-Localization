@@ -10,9 +10,9 @@ public class App {
 
         Frame frame = new Frame(map, 600, 600);
 
-        MCL monty = new MCL(map, 200, frame);
+        MCL monty = new MCL(map, 300, frame);
         frame.addMCLObject(monty);
-        monty.simulate(new Particle(0.5, 0.5), 400);
+        monty.simulate(new Particle(0.5, 0.5), 500);
         
     }
 }
