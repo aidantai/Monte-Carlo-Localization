@@ -4,19 +4,31 @@ import mcl.Gui.*;
 import mcl.Objects.*;
 
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.EnumeratedDistribution;
+import org.apache.commons.math3.util.Pair;
 
 public class MCL {
 
-    Random rand = new Random(); // Random.nextDouble() is slightly better than Math.random()
-    OGM map;
+    private Random rand = new Random(); // Random.nextDouble() is slightly better than Math.random()
+    private OGM map;
     private Frame frame;
 
     private ArrayList<Particle> currentParticles = new ArrayList<Particle>();
+    private ArrayList<Pair<Particle, Double>> particleWeightPairs = new ArrayList<>(); // For EnumeratedDistribution Resampling
     int numParticles;
     boolean usingGui = false;
+
+    // Adaptive sizing parameters
+    static double wslow = 1;
+    static double wfast = 1;
+    static double aslow = 0.005;
+    static double afast = 0.01;
 
     // Sensor model parameters
     static double stdevhit = 1;
@@ -107,7 +119,7 @@ public class MCL {
             if (map.isOccupied(x, y)) {
                 break;
             }
-            range += stepSize; // 
+            range += stepSize; 
         }
         return range;
     }
@@ -129,15 +141,18 @@ public class MCL {
 
     // Performs softmax equation on all particle weights. Makes it so the sum of all weights is 1.
     private void softmaxWeights(ArrayList<Particle> particles) {
-        double totalExpWeight = 0;
-        for (Particle particle : particles) {
-            double expWeight = Math.exp(particle.getWeight());
-            particle.setWeight(expWeight);
-            totalExpWeight += expWeight;
-        }
-        for (Particle particle : particles) {
-            particle.setWeight(particle.getWeight()/totalExpWeight);
-        } 
+        // double totalExpWeight = 0;
+        // for (Particle particle : particles) {
+        //     double expWeight = Math.exp(particle.getWeight());
+        //     particle.setWeight(expWeight);
+        //     totalExpWeight += expWeight;
+        // }
+        // for (Particle particle : particles) {
+        //     particle.setWeight(particle.getWeight()/totalExpWeight);
+        // } 
+        particles.forEach(p -> p.setWeight(Math.exp(p.getWeight())));
+        double totalExpWeight = particles.stream().map(p -> p.getWeight()).reduce(0.0, Double::sum);
+        particles.forEach(p -> p.setWeight(p.getWeight()/totalExpWeight));
     }
 
     // Thrun's measurement_model begins here
@@ -174,12 +189,12 @@ public class MCL {
 
     // This just adds random noise
     private double prand(double scan) { 
-        if (scan < 0 || scan >= Scan.MAX_RANGE) return 1/Scan.MAX_RANGE;
+        if (scan >= 0 && scan <= Scan.MAX_RANGE) return 1/Scan.MAX_RANGE;
         return 0;
     }
 
     // Thrun's weighing algorithm for a range scanner
-    private void beam_range_finder_model(ArrayList<Scan> scans, Particle particle, OGM map) {
+    private double beam_range_finder_model(ArrayList<Scan> scans, Particle particle, OGM map) {
         double q = 1;
         for (Scan scan : scans) {
             double raycast = raycast(map, particle, scan.getAngle(), Scan.MIN_RANGE, Scan.MAX_RANGE);
@@ -187,6 +202,7 @@ public class MCL {
             q *= p;
         }
         particle.setWeight(q);
+        return q;
     }
 
     // Thrun's algorithm for setting zhit, zshort, zmax, and zhit
@@ -295,54 +311,73 @@ public class MCL {
         return new Particle(newX, newY, Math.toDegrees(newTheta), particle.getWeight());
     }
 
-    // Stochastic Importance Sampling. I'm not sure if this is the best resampling algorithm to use, but it's the most common
-    private ArrayList<Particle> resampleParticles(ArrayList<Particle> oldParticles, int numResampled) {
+    // Stochastic Sampling. I'm not sure if this is the best resampling algorithm to use, but it's the most common
+    private ArrayList<Particle> resampleParticlesIndex(ArrayList<Particle> oldParticles, int numResampled, double probAdd) {
         int index = (int)Math.round(rand.nextDouble() * (oldParticles.size() - 1)); // finds a random index in the array of particles
         double beta = 0.0;
         double maxWeight = findBestParticle(oldParticles).getWeight();
         
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
-        newParticles.add(Robot.getBestParticle());
-        newParticles.add(Robot.getWeightedAverage());
-        for (int i = 0; i < numResampled - 2; i++) {
-            beta += rand.nextDouble() * maxWeight;
-            while (beta > oldParticles.get(index).getWeight()) {
-                beta -= oldParticles.get(index).getWeight();
-                index = (index + 1) % oldParticles.size(); // Loops back to beginning to avoid out of bounds exception
+        for (int i = 0; i < numResampled; i++) {
+            double r = rand.nextDouble();
+            if (r <= probAdd) {
+                newParticles.addAll(generateRandomParticles(map, 1));
+            } else {
+                beta += rand.nextDouble() * maxWeight;
+                while (beta > oldParticles.get(index).getWeight()) {
+                    beta -= oldParticles.get(index).getWeight();
+                    index = (index + 1) % oldParticles.size(); // Loops back to beginning to avoid out of bounds exception
+                }
+                Particle resampledParticle = oldParticles.get(index);
+                newParticles.add(new Particle(
+                    resampledParticle.getX() + rand.nextGaussian()*map.getResolution()/4, 
+                    resampledParticle.getY() + rand.nextGaussian()*map.getResolution()/4, 
+                    resampledParticle.getTheta() + rand.nextGaussian(), 
+                    resampledParticle.getWeight()));
+                //newParticles.add(new Particle(resampledParticle.getX(), resampledParticle.getY(), resampledParticle.getTheta(), resampledParticle.getWeight()));
             }
-            Particle resampledParticle = oldParticles.get(index);
-            newParticles.add(new Particle(
-                resampledParticle.getX() + rand.nextGaussian()*map.getResolution()/4, 
-                resampledParticle.getY() + rand.nextGaussian()*map.getResolution()/4, 
-                resampledParticle.getTheta() + rand.nextGaussian(), 
-                resampledParticle.getWeight()));
-            //newParticles.add(new Particle(resampledParticle.getX(), resampledParticle.getY(), resampledParticle.getTheta(), resampledParticle.getWeight()));
         }
         return newParticles;
     }
 
-    //This is another resampler that I don't understand and which does not work in any way whatsoever, but here it is
-    public ArrayList<Particle> resample(ArrayList<Particle> oldParticles, int numResampled) {
+    private ArrayList<Particle> augmentedResampleParticles(ArrayList<Particle> oldParticles, int numResampled, double probAdd) {
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
-        double factor = 1 / oldParticles.size();
-        double r = factor * rand.nextDouble();
-        double c = oldParticles.get(0).getWeight();
-        double u;
-
-        int i = 0;
-        for (int m = 0; m < numResampled; ++m) {
-            u = r + factor*m;
-            while( u > c) {
-                if (++i >= oldParticles.size()) break;
-                c += oldParticles.get(i).getWeight();
-            }
-            Particle resampledParticle = oldParticles.get(i);
-            newParticles.add(new Particle(resampledParticle.getX(), resampledParticle.getY(), resampledParticle.getTheta(), factor));
+        particleWeightPairs = (ArrayList<Pair<Particle, Double>>)oldParticles.stream().map(p -> new Pair<Particle, Double>(p, p.getWeight())).collect(Collectors.toList());
+        
+        double a = 0;
+        double b = 0;
+        for (int i = 0; i < currentParticles.size(); i++) {
+            a += currentParticles.get(i).getWeight();
+            b += particleWeightPairs.get(i).getValue();
         }
+        System.out.println(String.format("a: %s b: %s", a, b));
+        double c = currentParticles.parallelStream().map(p -> p.getWeight()).reduce(0.0, Double::sum);
+        double d = particleWeightPairs.parallelStream().map(p -> p.getKey().getWeight()).reduce(0.0, Double::sum);
+        System.out.println(String.format("c: %s d: %s", c, d));
 
-        return newParticles;
+        try {
+            EnumeratedDistribution<Particle> ed = new EnumeratedDistribution<>(particleWeightPairs);
+
+            for (int i = 0; i < numParticles; i++) {
+                double r = rand.nextDouble();
+                if (r <= probAdd) {
+                    newParticles.addAll(generateRandomParticles(map, 1));
+                } else {
+                    Particle resampledParticle = ed.sample();
+                    //newParticles.add(ed.sample());
+                    newParticles.add(new Particle(
+                        resampledParticle.getX() + rand.nextGaussian()*map.getResolution()/2, 
+                        resampledParticle.getY() + rand.nextGaussian()*map.getResolution()/2, 
+                        resampledParticle.getTheta() + rand.nextGaussian(), 
+                        resampledParticle.getWeight()));
+                }
+            }
+            return newParticles;
+        } catch(Exception e) {
+            System.out.println(e);
+            return oldParticles;
+        }
     }
-
     // Ties everything together
     private ArrayList<Particle> MCLAlgorithm(ArrayList<Particle> previousParticles, ArrayList<Scan> sensorData, double deltaX, double deltaY, double deltaTheta, int numParticles) {
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
@@ -350,9 +385,29 @@ public class MCL {
         sensorUpdate(previousParticles, sensorData);
         Robot.updateBestParticle(findBestParticle(previousParticles));
         Robot.updateWeightedAverage(findWeightedAverage(previousParticles));
-        newParticles = resampleParticles(previousParticles, numParticles*2/3);
+        newParticles = resampleParticlesIndex(previousParticles, numParticles*2/3, 0);
         newParticles.addAll(generateRandomParticles(map, numParticles/3));
         return newParticles;
+    }
+
+    private ArrayList<Particle> Augmented_MCL(ArrayList<Particle> previousParticles, ArrayList<Scan> sensorData, double deltaX, double deltaY, double deltaTheta, int numParticles) {
+        double wavg = 0;
+        for (Particle particle : previousParticles) {
+            sample_motion_model_odometry(particle, deltaX, deltaY, deltaTheta);
+            wavg += beam_range_finder_model(sensorData, particle, map);
+        }
+        wavg /= previousParticles.size();
+        if (wavg == 0) wavg = 0.001;
+        wslow += aslow*(wavg-wslow);
+        wfast += afast*(wavg-wfast);
+        double probAdd = Math.max(0, 1 - (wfast/wslow));
+        System.out.println(String.format("wavg: %s wslow: %s wfast: %s", wavg, wslow, wfast));
+
+        
+        Robot.updateBestParticle(findBestParticle(previousParticles));
+        Robot.updateWeightedAverage(findWeightedAverage(previousParticles));
+        previousParticles = augmentedResampleParticles(previousParticles, numParticles, probAdd);
+        return previousParticles;
     }
 
     public void sensorUpdate(ArrayList<Particle> particles, ArrayList<Scan> scans) {
@@ -378,7 +433,8 @@ public class MCL {
 
     // Second function to put whatever you want, such as gui or adaptive sizing (which I am planning on implementing)
     public void update(double deltaX, double deltaY, double deltaTheta, ArrayList<Scan> sensorData, int numParticles) {
-        currentParticles = MCLAlgorithm(currentParticles, sensorData, deltaX, deltaY, deltaTheta, numParticles);
+        //currentParticles = MCLAlgorithm(currentParticles, sensorData, deltaX, deltaY, deltaTheta, numParticles);
+        currentParticles = Augmented_MCL(currentParticles, sensorData, deltaX, deltaY, deltaTheta, numParticles);
 
         if (usingGui) {
             frame.panel.setParticles(currentParticles);

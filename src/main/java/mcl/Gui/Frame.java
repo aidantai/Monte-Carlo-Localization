@@ -79,6 +79,10 @@ public class Frame extends JFrame implements KeyListener {
                 monty.motionUpdate(0, 0, -15);
                 this.repaint();   
                 break;
+            case KeyEvent.VK_SPACE:
+                Robot.translate(50, 50, 0);
+                this.repaint();
+                break;
         }
     }
 
