@@ -241,8 +241,6 @@ public class MCL {
         zshort = probShortSum/zMag;
         zmax = probMaxSum/zMag;
         zrand = probRandSum/zMag;
-        //if (zrand == 0) zrand = 0.02;
-        //if (zmax == 0) zmax = 0.001;
         
         // to avoid dividing by 0
         if (probHitSum != 0) stdevhit = Math.sqrt(hitErrorSquared/probHitSum);
@@ -343,17 +341,6 @@ public class MCL {
     private ArrayList<Particle> augmentedResampleParticles(ArrayList<Particle> oldParticles, int numResampled, double probAdd) {
         ArrayList<Particle> newParticles = new ArrayList<Particle>();
         particleWeightPairs = (ArrayList<Pair<Particle, Double>>)oldParticles.stream().map(p -> new Pair<Particle, Double>(p, p.getWeight())).collect(Collectors.toList());
-        
-        double a = 0;
-        double b = 0;
-        for (int i = 0; i < currentParticles.size(); i++) {
-            a += currentParticles.get(i).getWeight();
-            b += particleWeightPairs.get(i).getValue();
-        }
-        System.out.println(String.format("a: %s b: %s", a, b));
-        double c = currentParticles.parallelStream().map(p -> p.getWeight()).reduce(0.0, Double::sum);
-        double d = particleWeightPairs.parallelStream().map(p -> p.getKey().getWeight()).reduce(0.0, Double::sum);
-        System.out.println(String.format("c: %s d: %s", c, d));
 
         try {
             EnumeratedDistribution<Particle> ed = new EnumeratedDistribution<>(particleWeightPairs);
@@ -401,8 +388,6 @@ public class MCL {
         wslow += aslow*(wavg-wslow);
         wfast += afast*(wavg-wfast);
         double probAdd = Math.max(0, 1 - (wfast/wslow));
-        System.out.println(String.format("wavg: %s wslow: %s wfast: %s", wavg, wslow, wfast));
-
         
         Robot.updateBestParticle(findBestParticle(previousParticles));
         Robot.updateWeightedAverage(findWeightedAverage(previousParticles));
